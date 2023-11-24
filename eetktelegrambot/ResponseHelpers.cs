@@ -1,29 +1,39 @@
 ﻿using HtmlAgilityPack;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot;
-using static System.Net.WebRequestMethods;
+using Telegram.Bot.Types;
 
 namespace eetktelegrambot
 {
     internal class ResponseHelpers
     {
+        public static async Task LoadScheduleList(string otdelenie, string dnev_zaoch, long chatId, int msgId, ITelegramBotClient botClient, CancellationToken ct)
+        {
+            await botClient.DeleteMessageAsync(chatId, msgId, ct);
+            var msgWait = await botClient.SendTextMessageAsync(chatId, "Загрузка расписания...", cancellationToken: ct);
+            await ListSchedules(otdelenie, dnev_zaoch, chatId, botClient, ct);
+            await botClient.DeleteMessageAsync(chatId, msgWait.MessageId, ct);
+        }
 
         // Расписание
-        public static async Task ListSchedules(string otdelenie, string dnev_zaoch, ITelegramBotClient botClient, long chatId, CancellationToken ct)
+        public static async Task ListSchedules(string otdelenie, string dnev_zaoch, long chatId, ITelegramBotClient botClient, CancellationToken ct)
         {
             try
             {
+                await botClient.SendChatActionAsync(chatId, Telegram.Bot.Types.Enums.ChatAction.Typing, cancellationToken: ct);
                 HtmlWeb hw = new();
                 HtmlDocument doc = hw.Load($"http://eetk.ru/78-2/{otdelenie}/{dnev_zaoch}/"); //мто дневное
                 string header = "";
                 bool gotHeader = false;
 
-                foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//strong"))
+                var nodes = doc.DocumentNode.SelectNodes("//strong");
+                if (nodes == null)
+                {
+                    await botClient.SendTextMessageAsync(chatId, "Ошибка поиска расписания.", cancellationToken: ct);
+                    return;
+                }
+
+                foreach (HtmlNode node in nodes)
                 {
                     if (gotHeader) break;
                     if (node.InnerText.StartsWith("Расписание"))
@@ -35,6 +45,12 @@ namespace eetktelegrambot
                         }
                         gotHeader = true;
                     }
+                }
+
+                if (string.IsNullOrEmpty(header))
+                {
+                    await botClient.SendTextMessageAsync(chatId, "Ошибка поиска расписания.", cancellationToken: ct);
+                    return;
                 }
 
                 // Расписание
