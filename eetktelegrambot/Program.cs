@@ -29,6 +29,7 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
 {
     var callbackQuery = update.CallbackQuery;
     await CallbackResponder.Respond(update, botClient, ct);
+    if (callbackQuery != null) LogQ(callbackQuery);
 
     if (update.Message is not { } message) return;
     if (message.Text is not { } messageText) return;
@@ -47,6 +48,16 @@ void Log(Message message)
         return;
     }
     else Console.WriteLine($"[Message]({message.Date.ToLocalTime()}) | {message.From.FirstName} ({message.From.Username}): {message.Text} ");
+}
+
+void LogQ(CallbackQuery query)
+{
+    if (query.From == null)
+    {
+        Console.WriteLine("Received a callback from a null user.");
+        return;
+    }
+    else Console.WriteLine($"[Callback]({query.Message?.Date.ToLocalTime()}) | {query.From.FirstName} ({query.From.Username}): {query.Data} ");
 }
 
 Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken ct)

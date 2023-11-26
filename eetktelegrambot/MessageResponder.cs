@@ -26,20 +26,23 @@ namespace eetktelegrambot
                 keyboardActive = true;
             }
 
-            switch (message.Text)
+            switch (message.Text?.ToLower())
             {
-                case "почини клавиатуру":
+                case "клавиатура":
                     await EnableKeyboard(chatId);
                     break;
 
                 case "абоба":
                 case "сам абоба":
-                case "сам абоба.":
-                    await _botClient.SendTextMessageAsync(chatId, "сам абоба.", cancellationToken: _ct);
+                    await _botClient.SendTextMessageAsync(chatId, "сам абоба", cancellationToken: _ct);
                     break;
 
-                case "📅 Расписание 📅":
-                case "Расписание":
+                case "/start":
+                    await ToMainMenu(chatId);
+                    break;
+
+                /*
+                case "📅 расписание 📅":
                 case "расписание":
                     InlineKeyboardMarkup ik_etomto = new(new[]
                     {
@@ -48,19 +51,11 @@ namespace eetktelegrambot
                     });
                     await _botClient.SendTextMessageAsync(chatId, "Выберите отделение.", replyMarkup: ik_etomto, cancellationToken: _ct);
                     break;
+                */
 
-                case "🏠 На главную 🏠":
-                case "На главную":
+                case "🏠 на главную 🏠":
                 case "на главную":
-                    InlineKeyboardMarkup ik_main = new(new[]
-                    {
-                        new[] { InlineKeyboardButton.WithCallbackData("Кнопка 1", "Главная_Кнопка1") },
-                        new[] { InlineKeyboardButton.WithCallbackData("Кнопка 2", "Главная_Кнопка2") },
-                        new[] { InlineKeyboardButton.WithCallbackData("Кнопка 3", "Главная_Кнопка3") },
-                        new[] { InlineKeyboardButton.WithCallbackData("Расписание", "Главная_Расписание") },
-                        new[] { InlineKeyboardButton.WithCallbackData("О боте", "Главная_ОБоте") },
-                    });
-                    await _botClient.SendTextMessageAsync(chatId, "🏠", replyMarkup: ik_main, cancellationToken: _ct);
+                    await ToMainMenu(chatId);
                     break;
 
                 default:
@@ -69,12 +64,40 @@ namespace eetktelegrambot
             }
         }
 
+        public static async Task ToMainMenu(long chatId, bool asEdit = false, int? msgId = null)
+        {
+            if (_botClient == null) return;
+            string menuHeader = "________🏠 Меню 🏠________\n\n__⬇️ Выберите вкладку ⬇️__";
+            InlineKeyboardMarkup ik_main = new(new[]
+                    {
+                        new[] { InlineKeyboardButton.WithCallbackData("Приемная комиссия", "приемная_комиссия") },
+                        new[] { InlineKeyboardButton.WithCallbackData("Подача заявления", "подача_заявления") },
+                        new[] { InlineKeyboardButton.WithCallbackData("Проходные баллы", "проходные_баллы") },
+                        new[] { InlineKeyboardButton.WithCallbackData("Адреса на карте", "показать_карту") },
+                        new[] { InlineKeyboardButton.WithUrl("Специальности", "http://eetk.ru/20-2/22-2/"),
+                                InlineKeyboardButton.WithUrl("Приказы о зачислении", "http://eetk.ru/20-2/9985-2/") 
+                        },
+                        /*new[] { InlineKeyboardButton.WithCallbackData("Расписание", "Главная_Расписание") },
+                        new[] { InlineKeyboardButton.WithCallbackData("О боте", "Главная_ОБоте") },*/
+                    });
+            if (asEdit)
+            {
+                if (msgId == null)
+                {
+                    Console.WriteLine("null msgId");
+                    return;
+                }
+                else await _botClient.EditMessageTextAsync(chatId, (int)msgId, menuHeader, replyMarkup: ik_main, cancellationToken: _ct);
+            }
+            else await _botClient.SendTextMessageAsync(chatId, menuHeader, replyMarkup: ik_main, cancellationToken: _ct);
+        }
+
         static async Task EnableKeyboard(long chatId)
         {
             if (_botClient == null) return;
             Console.WriteLine("Enabling reply keyboard");
-            ReplyKeyboardMarkup replyKeyboardMarkup = new(new[] { new KeyboardButton[] { "🏠 На главную 🏠", "📅 Расписание 📅" } }) { ResizeKeyboard = true };
-            var kbmsg = await _botClient.SendTextMessageAsync(chatId, "Включаю клавиатуру...", replyMarkup: replyKeyboardMarkup, disableNotification: true, cancellationToken: _ct);
+            ReplyKeyboardMarkup replyKeyboardMarkup = new(new[] { new KeyboardButton[] { "🏠 На главную 🏠", /*"📅 Расписание 📅"*/ } }) { ResizeKeyboard = true };
+            await _botClient.SendTextMessageAsync(chatId, "Включаю клавиатуру...", replyMarkup: replyKeyboardMarkup, disableNotification: true, cancellationToken: _ct);
             //await _botClient.DeleteMessageAsync(chatId, kbmsg.MessageId, _ct);
         }
     }

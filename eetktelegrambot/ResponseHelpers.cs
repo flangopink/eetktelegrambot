@@ -1,12 +1,42 @@
 ﻿using HtmlAgilityPack;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot;
-using Telegram.Bot.Types;
 
 namespace eetktelegrambot
 {
     internal class ResponseHelpers
     {
+        public static string FindText(string tag)
+        {
+            List<string> lines = new();
+
+            using (var reader = new StreamReader("responses.txt"))
+            {
+                if (reader == null) return "[файл не найден]";
+
+                var startFound = false;
+
+                while (!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+
+                    if (line == null) continue;
+
+                    if (!startFound) startFound = line.Contains(tag);
+                    else
+                    {
+                        if (line == null) continue;
+                        var isEnd = line.Contains("/" + tag);
+                        if (!isEnd) lines.Add(line.Replace("\\t", "\t"));
+                        else break;
+                    }
+                }
+            }
+            return string.Join('\n',lines) ?? "[нет текста]";
+        }
+
+        #region - Расписание -
+
         public static async Task LoadScheduleList(string otdelenie, string dnev_zaoch, long chatId, int msgId, ITelegramBotClient botClient, CancellationToken ct)
         {
             await botClient.DeleteMessageAsync(chatId, msgId, ct);
@@ -130,5 +160,7 @@ namespace eetktelegrambot
                 Console.WriteLine(ex.Message);
             }
         }
+
+        #endregion
     }
 }
