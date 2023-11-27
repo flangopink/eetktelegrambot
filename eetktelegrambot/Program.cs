@@ -27,17 +27,24 @@ cts.Cancel();
 // responding to messages
 async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken ct)
 {
-    var callbackQuery = update.CallbackQuery;
-    await CallbackResponder.Respond(update, botClient, ct);
-    if (callbackQuery != null) LogQ(callbackQuery);
+    try
+    {
+        var callbackQuery = update.CallbackQuery;
+        await CallbackResponder.Respond(update, botClient, ct);
+        if (callbackQuery != null) LogQ(callbackQuery);
 
-    if (update.Message is not { } message) return;
-    if (message.Text is not { } messageText) return;
+        if (update.Message is not { } message) return;
+        if (message.Text is not { } messageText) return;
 
-    var chatId = message.Chat.Id;
+        var chatId = message.Chat.Id;
 
-    Log(message);
-    await MessageResponder.Respond(message, chatId);
+        Log(message);
+        await MessageResponder.Respond(message, chatId);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Couldn't respond. " + ex.Message);
+    }
 }
 
 void Log(Message message)
